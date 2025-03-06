@@ -10,7 +10,6 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 
-
 const app = express();
 
 app.use(cors({
@@ -21,7 +20,6 @@ app.use(cors({
 
 
 
-// app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 app.use('/images', express.static('images'))
@@ -37,26 +35,6 @@ app.listen(8081, () => {
 
 
 
-// app.use(cors({
-//   origin: 'http://localhost:3000', // Allow requests from your React frontend
-//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-//   allowedHeaders: ['Content-Type', 'Authorization'],
-// }));
-
-
-//test
-// -------------------- Host DB ------------------------
-// const db = mysql.createConnection({
-//   host: ' ',
-//   user: 'rooot',
-//   port:'3306',
-//   password: 'password',
-//   database: 'dev_cat',
-// });
-
-
-
-
 const db = mysql.createConnection({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -65,9 +43,8 @@ const db = mysql.createConnection({
   ssl: {
     rejectUnauthorized: false // Optional: Enforce SSL security if using AWS RDS
   }
+  
 }); 
-
-
 
 
 //---------------- LOCAL TEST ----------------------
@@ -86,9 +63,6 @@ db.connect((err) => {
   }
   console.log("Connected to MySQL database..");
 });
-
-
-// export default db;
 
 
 
@@ -133,7 +107,9 @@ app.get("/get_businesses", (req, res) => {
 
 
 app.get("/home/:id", (req, res) => {
-  const sql = "SELECT * FROM categories WHERE business_id = ?";
+  // const sql = "SELECT * FROM categories WHERE business_id = ?";
+
+  const sql = "SELECT categories.*, users.usr_name FROM categories INNER JOIN users ON categories.business_id = users.id WHERE users.id = ?";
   const id = req.params.id;
   db.query(sql, [id], (err, result) => {
     if (err) return res.json({ Message: "Error inside server" });
@@ -165,6 +141,7 @@ app.post("/login", (req, res) => {
         token,
         role: user.role,
         business_id: user.id,  
+        usr_name: user.usr_name,  
       });
     } else {
       return res.status(401).json({ message: "Invalid credentials" });
@@ -208,8 +185,6 @@ app.get("/about/:businessId", (req, res) => {
 });
 
 
-
-
 // -------------------------- EDIT CAT --------------------------------------
 app.put('/editcat/:categoryId/:businessId',(req,res)=>{
   const sql = "UPDATE categories SET `category_name`= ?, `category_details`= ? WHERE idcategories = ? AND `business_id`= ? ";
@@ -223,7 +198,7 @@ app.put('/editcat/:categoryId/:businessId',(req,res)=>{
 
 
 
-// -------------------------- EDIT PROD --------------------------------------
+// -------------------------- EDIT PRODUCT --------------------------------------
 app.put('/editprod/:product_id/:businessId',(req,res)=>{
   const sql = "UPDATE products SET `product_name`= ?, `product_details`= ?, `price`= ? WHERE product_id = ? AND `business_id`= ? ";
   const values = [req.body.product_name, req.body.product_details, req.body.price, req.params.product_id,req.params.businessId]; 
@@ -240,7 +215,6 @@ app.put('/editprod/:product_id/:businessId',(req,res)=>{
 app.delete('/deleteCat/:categoryId/:businessId', (req, res) => {
   const { categoryId, businessId } = req.params;
 
-  // First, delete all products related to this category
   const deleteProducts = "DELETE FROM products WHERE category_id = ? AND business_id = ?";
 
   db.query(deleteProducts, [categoryId, businessId], (err, result) => {
@@ -251,7 +225,6 @@ app.delete('/deleteCat/:categoryId/:businessId', (req, res) => {
 
     console.log("Products deleted successfully");
 
-    // Now, delete the category
     const deleteCategory = "DELETE FROM categories WHERE idcategories = ? AND business_id = ?";
     
     db.query(deleteCategory, [categoryId, businessId], (err, result) => {
@@ -309,7 +282,7 @@ app.post("/addCategories", upload.single('cat_image'),  (req, res) => {
 
  
  
-// ------------------------  PRODUCT DETAILS TO EDIT ----------------------------------
+// ------------------------  PRODUCT DETAILS EDIT ----------------------------------
 
 app.get('/product/:id/:businessId',(req,res)=>{
   const sql = "SELECT * FROM products WHERE product_id = ? AND business_id = ?" ;
@@ -319,9 +292,6 @@ app.get('/product/:id/:businessId',(req,res)=>{
       return res.json(result);
   })
 })
-
-
-
 
 
 // ------------------------  CATEGORY DETAILS ----------------------------------
@@ -346,7 +316,7 @@ app.get('/get_category/:id/:businessId', (req, res) => {
 app.get('/get_products/:id/:businessId', (req, res) => {
   const { id, businessId } = req.params;
   const sql = `
-    SELECT  products.business_id, products.product_id, products.product_name, products.product_details,products.price,products.product_image
+    SELECT categories.category_name, categories.category_details, products.business_id, products.product_id, products.product_name, products.product_details,products.price,products.product_image
     FROM products
     INNER JOIN categories ON products.category_id = categories.idcategories
     WHERE  categories.idcategories = ? AND products.business_id = ? 
@@ -362,26 +332,3 @@ app.get('/get_products/:id/:businessId', (req, res) => {
 });
 
 
- 
-// ------------------------  DISPLAY PRODUCTS ----------------------------------
-
-// app.get('/get_products/:id', (req, res) => {
-//   const categoryId = req.params.id;
-
-//   const sql = `
-//     SELECT categories.idcategories, categories.category_name, categories.category_details, 
-//     products.product_id, products.product_name, products.product_details, products.price, products.product_image
-//     FROM categories
-//     LEFT JOIN products ON categories.idcategories = products.category_id
-//     WHERE categories.idcategories = ?
-//   `;
-
-//   db.query(sql, [categoryId], (err, result) => {
-//     if (err) {
-//       return res.json({ Message: "Error inside server" });
-//     }
-//     return res.json(result);
-//   });
-// });
-
- 
