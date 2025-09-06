@@ -1,3 +1,4 @@
+Currently paused due to hosting costs**
 Modular Catalog Backend (Node.js + Express)
 
 A Node.js & Express backend for the Modular Catalog system, providing APIs to manage categories, products, and user roles.
